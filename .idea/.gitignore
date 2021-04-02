@@ -78,3 +78,10 @@ fabric.properties
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
+
+# trained stuff
+/trained-models/
+*.pth
+
+other.xml
+Project_Default.xml
