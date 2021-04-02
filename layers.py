@@ -1,12 +1,14 @@
 import torch
 import torch.nn as nn
 import math
+import torch.nn.functional as F
 
 class ConvLayer2D(nn.Sequential):
     def __init__(self, in_channels, out_channels, kernel, stride, padding, dilation):
         super().__init__()
         self.add_module('norm', nn.BatchNorm2d(in_channels))
-        self.add_module('relu', nn.ReLU(True))
+        # self.add_module('relu', nn.ReLU(True))
+        self.add_module('swish', ResidualBlock.swish())
         self.add_module('conv', nn.Conv2d(in_channels, out_channels, kernel_size=kernel,
                                           stride=stride, padding=padding, dilation=dilation, bias=True))
         self.add_module('drop', nn.Dropout2d(0.2))
@@ -86,20 +88,26 @@ class ResidualBlock(nn.Module):
         super(ResidualBlock, self).__init__()
         self.conv1 = conv3x3(in_channels, out_channels, stride)
         self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
+        # self.relu = nn.ReLU(inplace=True)
+        self.swish = ResidualBlock.swish()
         self.conv2 = conv3x3(out_channels, out_channels)
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.downsample = downsample
+
+    def swish(x):
+        return x * F.sigmoid(x)
         
     def forward(self, x):
         residual = x
         out = self.conv1(x)
         out = self.bn1(out)
-        out = self.relu(out)
+        # out = self.relu(out)
+        out = self.swish(out)
         out = self.conv2(out)
         out = self.bn2(out)
         if self.downsample:
             residual = self.downsample(x)
         out += residual
-        out = self.relu(out)
+        # out = self.relu(out)
+        out = self.swish(out)
         return out

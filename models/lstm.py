@@ -1,5 +1,7 @@
 #Original model presented in: C. Spampinato, S. Palazzo, I. Kavasidis, D. Giordano, N. Souly, M. Shah, Deep Learning Human Mind for Automated Visual Classification, CVPR 2017 
-import torch; torch.utils.backcompat.broadcast_warning.enabled = True
+import torch
+import layers
+torch.utils.backcompat.broadcast_warning.enabled = True
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
@@ -35,6 +37,7 @@ class Model(nn.Module):
         x = self.lstm(x, lstm_init)[0][:,-1,:]
         
         # Forward output
-        x = F.relu(self.output(x))
+        # x = F.relu(self.output(x))
+        x = layers.ResidualBlock.swish(self.output(x))
         x = self.classifier((x))
         return x

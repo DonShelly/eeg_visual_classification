@@ -50,11 +50,11 @@ parser.add_argument('--pretrained_net', default=r"lstm__subject0_epoch_3000.pth"
 # Training options
 parser.add_argument("-b", "--batch_size", default=16, type=int, help="batch size")
 parser.add_argument('-o', '--optim', default="Adam", help="optimizer")
-parser.add_argument('-lr', '--learning-rate', default=0.00001, type=float, help="learning rate")
+parser.add_argument('-lr', '--learning-rate', default=0.0001, type=float, help="learning rate")
 parser.add_argument('-lrdb', '--learning-rate-decay-by', default=0.5, type=float, help="learning rate decay factor")
 parser.add_argument('-lrde', '--learning-rate-decay-every', default=10, type=int, help="learning rate decay period")
 parser.add_argument('-dw', '--data-workers', default=4, type=int, help="data loading workers")
-parser.add_argument('-e', '--epochs', default=10000, type=int, help="training epochs")
+parser.add_argument('-e', '--epochs', default=1000, type=int, help="training epochs")
 
 # Save options
 parser.add_argument('-sc', '--saveCheck', default=100, type=int, help="learning rate")
