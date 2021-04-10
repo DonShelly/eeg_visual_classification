@@ -1,0 +1,15 @@
+dataset:	
+splits:		all
+subjects:	all
+segment:	-
+model:		LSTM
+
+batch size:
+optimizers:	
+learning rate:	
+LR decay by:	
+LR decay every:	
+data workers:	
+epochs:		
+
+best epoch:	

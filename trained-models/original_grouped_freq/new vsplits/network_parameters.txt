@@ -1,0 +1,19 @@
+dataset:	
+splits:		all
+subjects:	all
+segment:	-
+model:		LSTM
+
+batch size:
+optimizers:	
+learning rate:	0.0001
+LR decay by:	
+LR decay every:	
+data workers:	
+epochs:		1000
+
+best epoch:	
+
+[320-480]  [?-? Hz] - Epoch 320: TrL=0.4474, TrA=0.8448, VL=1.0351, VA=0.6759, TeL=1.0714, TeA=0.6673, TeA at max VA = 0.6668 at epoch 301
+
+[320-480]  [?-? Hz] - Epoch 320: TrL=0.4474, TrA=0.8448, VL=1.0351, VA=0.6759, TeL=1.0714, TeA=0.6673, TeA at max VA = 0.6668 at epoch 301

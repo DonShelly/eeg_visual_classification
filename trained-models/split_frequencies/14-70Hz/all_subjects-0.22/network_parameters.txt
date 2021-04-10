@@ -1,0 +1,17 @@
+dataset:	data2 14-70Hz
+splits:		all
+subjects:	all
+segment:	320-460
+model:		LSTM
+
+batch size:	16
+optimizers:	Adam
+learning rate:	0.0001
+LR decay by:	0.5
+LR decay every:	10
+data workers:	4
+epochs:		218
+
+best epoch:	86
+best line:	Epoch 86: TrL=1.1273, TrA=0.6217, VL=2.6399, VA=0.2515, TeL=2.6261, TeA=0.2263, TeA at max VA = 0.2263 at epoch 86
+final line:	Epoch 218: TrL=0.1540, TrA=0.9754, VL=5.5728, VA=0.2198, TeL=5.5933, TeA=0.2026, TeA at max VA = 0.2263 at epoch 86

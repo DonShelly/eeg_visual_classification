@@ -1,0 +1,3 @@
+0.0001
+Epoch 1000: TrL=0.4822, TrA=0.8300, VL=1.1070, VA=0.6744, TeL=1.1040, TeA=0.6658, TeA at max VA = 0.6507 at epoch 939
+Epoch 939: TrL=0.5123, TrA=0.8174, VL=1.0521, VA=0.6820, TeL=1.0748, TeA=0.6507, TeA at max VA = 0.6507 at epoch 939

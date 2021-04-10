@@ -19,12 +19,12 @@ parser = argparse.ArgumentParser(description="Template")
 # Data parser.add_argument('-ed', '--eeg-dataset', default=r"..\..\datasets\new-perceive-data\eeg_55_95_std.pth", help="EEG dataset path") # 55-95Hz
 # parser.add_argument('-ed', '--eeg-dataset', default=r"..\..\datasets\new-perceive-data\eeg_5_95_std.pth", help="EEG dataset path") # 5-95Hz
 # parser.add_argument('-ed', '--eeg-dataset', default=r"..\..\datasets\new-perceive-data\eeg_14_70_std.pth", help="EEG dataset path")  # 14-70Hz
-parser.add_argument('-ed', '--eeg-dataset', default=r"..\..\datasets\perceivelab eeg image classificatiopn\origial\eeg_signals_128_sequential_band_all_with_mean_std.pth", help="EEG dataset path")  # original datasets before email
+parser.add_argument('-ed', '--eeg-dataset', default=r"../../datasets/perceivelab eeg image classificatiopn/origial/eeg_signals_128_sequential_band_all_with_mean_std.pth", help="EEG dataset path")  # original datasets before email
 
 ## Splits ##
 # parser.add_argument('-sp', '--splits-path', default=r"..\..\datasets\new-perceive-data\block_splits_by_image_all.pth", help="splits path")  # All subjects
 # parser.add_argument('-sp', '--splits-path', default=r"data\block\block_splits_by_image_single.pth", help="splits path") #Single subject
-parser.add_argument('-sp', '--splits-path', default=r"..\..\datasets\perceivelab eeg image classificatiopn\origial\block_splits_by_image.pth", help="splits path")  # original datasets before email
+parser.add_argument('-sp', '--splits-path', default=r"../../datasets/perceivelab eeg image classificatiopn/origial/block_splits_by_image.pth", help="splits path")  # original datasets before email
 
 # ## BLOCK DESIGN ###
 parser.add_argument('-sn', '--split-num', default=0, type=int, help="split number")  # leave this always to zero.
