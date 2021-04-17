@@ -17,58 +17,59 @@ from ray.tune.schedulers import ASHAScheduler
 torch.utils.backcompat.broadcast_warning.enabled = True
 cudnn.benchmark = True
 
-# Define options
-parser = argparse.ArgumentParser(description="Template")
+def set_params():
+    # Define options
+    parser = argparse.ArgumentParser(description="Template")
 
-# Dataset options
+    # Dataset options
 
-# Data - Data needs to be pre-filtered and filtered data is available
+    # Data - Data needs to be pre-filtered and filtered data is available
 
-# ## BLOCK DESIGN ###
-parser.add_argument('-ed', '--eeg-dataset', default=r"../../datasets/original_data/eeg_signals_128_sequential_band_all_with_mean_std.pth", help="EEG dataset path")  # original datasets before email
+    # ## BLOCK DESIGN ###
+    parser.add_argument('-ed', '--eeg-dataset', default=r"../../datasets/original_data/eeg_signals_128_sequential_band_all_with_mean_std.pth", help="EEG dataset path")  # original datasets before email
 
-## Splits ##
-parser.add_argument('-sp', '--splits-path', default=r"../../datasets/original_data/block_splits_by_image.pth", help="splits path")  # original datasets before email
+    ## Splits ##
+    parser.add_argument('-sp', '--splits-path', default=r"../../datasets/original_data/block_splits_by_image.pth", help="splits path")  # original datasets before email
 
-# ## BLOCK DESIGN ###
-parser.add_argument('-sn', '--split-num', default=0, type=int, help="split number")  # leave this always to zero.
+    # ## BLOCK DESIGN ###
+    parser.add_argument('-sn', '--split-num', default=0, type=int, help="split number")  # leave this always to zero.
 
-# Subject selecting
-parser.add_argument('-sub', '--subject', default=0, type=int, help="choose a subject from 1 to 6, default is 0 (all subjects)")
+    # Subject selecting
+    parser.add_argument('-sub', '--subject', default=0, type=int, help="choose a subject from 1 to 6, default is 0 (all subjects)")
 
-# Time options: select from 20 to 460 samples from EEG data
-parser.add_argument('-tl', '--time_low', default=320, type=float, help="lowest time value")
-parser.add_argument('-th', '--time_high', default=480,  type=float, help="highest time value")
+    # Time options: select from 20 to 460 samples from EEG data
+    parser.add_argument('-tl', '--time_low', default=320, type=float, help="lowest time value")
+    parser.add_argument('-th', '--time_high', default=480,  type=float, help="highest time value")
 
-# Model type/options
-parser.add_argument('-mt', '--model_type', default='lstm', help='specify which generator should be used: lstm|EEGChannelNet')
-# It is possible to test out multiple deep classifiers: - lstm is the model described in the paper "Deep Learning
-# Human Mind for Automated Visual Classification”, in CVPR 2017 - model10 is the model described in the paper
-# "Decoding brain representations by multimodal learning of neural activity and visual features", TPAMI 2020
-parser.add_argument('-mp', '--model_params', default='', nargs='*', help='list of key=value pairs of model options')
+    # Model type/options
+    parser.add_argument('-mt', '--model_type', default='lstm', help='specify which generator should be used: lstm|EEGChannelNet')
+    # It is possible to test out multiple deep classifiers: - lstm is the model described in the paper "Deep Learning
+    # Human Mind for Automated Visual Classification”, in CVPR 2017 - model10 is the model described in the paper
+    # "Decoding brain representations by multimodal learning of neural activity and visual features", TPAMI 2020
+    parser.add_argument('-mp', '--model_params', default='', nargs='*', help='list of key=value pairs of model options')
 
-## Add pretrained net ##
-parser.add_argument('--pretrained_net', default=r"lstm__subject0_epoch_1000.pth", help="path to pre-trained net (to continue training)")
-#parser.add_argument('--pretrained_net', default="", help="path to pre-trained net (to continue training)")
+    ## Add pretrained net ##
+    #parser.add_argument('--pretrained_net', default=r"lstm__subject0_epoch_1000.pth", help="path to pre-trained net (to continue training)")
+    parser.add_argument('--pretrained_net', default="", help="path to pre-trained net (to continue training)")
 
-# Training options
-parser.add_argument("-b", "--batch_size", default=16, type=int, help="batch size")
-parser.add_argument('-o', '--optim', default="Adam", help="optimizer")
-parser.add_argument('-lr', '--learning-rate', default=0.0001, type=float, help="learning rate")
-parser.add_argument('-lrdb', '--learning-rate-decay-by', default=0.5, type=float, help="learning rate decay factor")
-parser.add_argument('-lrde', '--learning-rate-decay-every', default=10, type=int, help="learning rate decay period")
-parser.add_argument('-dw', '--data-workers', default=4, type=int, help="data loading workers")
-parser.add_argument('-e', '--epochs', default=1000, type=int, help="training epochs")
+    # Training options
+    parser.add_argument("-b", "--batch_size", default=16, type=int, help="batch size")
+    parser.add_argument('-o', '--optim', default="Adam", help="optimizer")
+    parser.add_argument('-lr', '--learning-rate', default=0.0001, type=float, help="learning rate")
+    parser.add_argument('-lrdb', '--learning-rate-decay-by', default=0.5, type=float, help="learning rate decay factor")
+    parser.add_argument('-lrde', '--learning-rate-decay-every', default=10, type=int, help="learning rate decay period")
+    parser.add_argument('-dw', '--data-workers', default=4, type=int, help="data loading workers")
+    parser.add_argument('-e', '--epochs', default=1000, type=int, help="training epochs")
 
-# Save options
-parser.add_argument('-sc', '--saveCheck', default=100, type=int, help="learning rate")
+    # Save options
+    parser.add_argument('-sc', '--saveCheck', default=100, type=int, help="learning rate")
 
-# Backend options
-parser.add_argument('--no-cuda', default=False, help="disable CUDA", action="store_true")
+    # Backend options
+    parser.add_argument('--no-cuda', default=False, help="disable CUDA", action="store_true")
 
-# Parse arguments
-opt = parser.parse_args()
-print(opt)
+    # Parse arguments
+    opt = parser.parse_args()
+    print(opt)
 
 # Dataset loading class
 class EEGDataset:
@@ -130,111 +131,115 @@ class Splitter:
         # Return
         return eeg, label
 
+def load_data():
+    # Load dataset
+    dataset = EEGDataset(opt.eeg_dataset)
+    # Create loaders
+    loaders = {split: DataLoader(Splitter(dataset, split_path=opt.splits_path, split_num=opt.split_num, split_name=split), batch_size=opt.batch_size, drop_last=True, shuffle=True) for split in ["train", "val", "test"]}
 
-# Load dataset
-dataset = EEGDataset(opt.eeg_dataset)
-# Create loaders
-loaders = {split: DataLoader(Splitter(dataset, split_path=opt.splits_path, split_num=opt.split_num, split_name=split), batch_size=opt.batch_size, drop_last=True, shuffle=True) for split in ["train", "val", "test"]}
+def main(num_samples=10, max_num_epochs=200, gpus_per_trial=1):
+    # Load model
+    model_options = {key: int(value) if value.isdigit() else (float(value) if value[0].isdigit() else value) for (key, value) in [x.split("=") for x in opt.model_params]}
+    # Create discriminator model/optimizer
+    module = importlib.import_module("models." + opt.model_type)
+    model = module.Model(**model_options)
+    optimizer = getattr(torch.optim, opt.optim)(model.parameters(), lr=opt.learning_rate)
 
-# Load model
+    # Setup CUDA
+    if not opt.no_cuda:
+        model.cuda()
+        print("Copied to CUDA")
 
-model_options = {key: int(value) if value.isdigit() else (float(value) if value[0].isdigit() else value) for (key, value) in [x.split("=") for x in opt.model_params]}
-# Create discriminator model/optimizer
-module = importlib.import_module("models." + opt.model_type)
-model = module.Model(**model_options)
-optimizer = getattr(torch.optim, opt.optim)(model.parameters(), lr=opt.learning_rate)
+    if opt.pretrained_net != '':
+        model = torch.load(opt.pretrained_net)
+        print(model)
 
-# Setup CUDA
-if not opt.no_cuda:
-    model.cuda()
-    print("Copied to CUDA")
+    # initialize training,validation, test losses and accuracy list
+    losses_per_epoch = {"train": [], "val": [], "test": []}
+    accuracies_per_epoch = {"train": [], "val": [], "test": []}
 
-if opt.pretrained_net != '':
-    model = torch.load(opt.pretrained_net)
-    print(model)
+    best_accuracy = 0
+    best_accuracy_val = 0
+    best_epoch = 0
+    # Start training
 
-# initialize training,validation, test losses and accuracy list
-losses_per_epoch = {"train": [], "val": [], "test": []}
-accuracies_per_epoch = {"train": [], "val": [], "test": []}
-
-best_accuracy = 0
-best_accuracy_val = 0
-best_epoch = 0
-# Start training
-
-predicted_labels = []
-correct_labels = []
+    predicted_labels = []
+    correct_labels = []
 
 
-for epoch in range(1, opt.epochs+1):
-    # Initialize loss/accuracy variables
-    losses = {"train": 0, "val": 0, "test": 0}
-    accuracies = {"train": 0, "val": 0, "test": 0}
-    counts = {"train": 0, "val": 0, "test": 0}
-    # Adjust learning rate for SGD
-    if opt.optim == "SGD":
-        lr = opt.learning_rate * (opt.learning_rate_decay_by ** (epoch // opt.learning_rate_decay_every))
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
-    # Process each split
-    for split in ("train", "val", "test"):
-        # Set network mode
-        if split == "train":
-            model.train()
-            torch.set_grad_enabled(True)
-        else:
-            model.eval()
-            torch.set_grad_enabled(False)
-        # Process all split batches
-        for i, (input, target) in enumerate(loaders[split]):
-            # Check CUDA
-            if not opt.no_cuda:
-                input = input.to("cuda")
-                target = target.to("cuda")
-            # Forward
-            output = model(input)
-
-            # Compute loss
-            loss = F.cross_entropy(output, target)
-            losses[split] += loss.item()
-            # Compute accuracy
-            _, pred = output.data.max(1)
-            correct = pred.eq(target.data).sum().item()
-            accuracy = correct/input.data.size(0)
-            accuracies[split] += accuracy
-            counts[split] += 1
-            # Backward and optimize
+    for epoch in range(1, opt.epochs+1):
+        # Initialize loss/accuracy variables
+        losses = {"train": 0, "val": 0, "test": 0}
+        accuracies = {"train": 0, "val": 0, "test": 0}
+        counts = {"train": 0, "val": 0, "test": 0}
+        # Adjust learning rate for SGD
+        if opt.optim == "SGD":
+            lr = opt.learning_rate * (opt.learning_rate_decay_by ** (epoch // opt.learning_rate_decay_every))
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr
+        # Process each split
+        for split in ("train", "val", "test"):
+            # Set network mode
             if split == "train":
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                model.train()
+                torch.set_grad_enabled(True)
+            else:
+                model.eval()
+                torch.set_grad_enabled(False)
+            # Process all split batches
+            for i, (input, target) in enumerate(loaders[split]):
+                # Check CUDA
+                if not opt.no_cuda:
+                    input = input.to("cuda")
+                    target = target.to("cuda")
+                # Forward
+                output = model(input)
 
-    # Print info at the end of the epoch
-    if accuracies["val"]/counts["val"] >= best_accuracy_val:
-        best_accuracy_val = accuracies["val"]/counts["val"]
-        best_accuracy = accuracies["test"]/counts["test"]
-        best_epoch = epoch
+                # Compute loss
+                loss = F.cross_entropy(output, target)
+                losses[split] += loss.item()
+                # Compute accuracy
+                _, pred = output.data.max(1)
+                correct = pred.eq(target.data).sum().item()
+                accuracy = correct/input.data.size(0)
+                accuracies[split] += accuracy
+                counts[split] += 1
+                # Backward and optimize
+                if split == "train":
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+
+        # Print info at the end of the epoch
+        if accuracies["val"]/counts["val"] >= best_accuracy_val:
+            best_accuracy_val = accuracies["val"]/counts["val"]
+            best_accuracy = accuracies["test"]/counts["test"]
+            best_epoch = epoch
 
 
 
-    TrL, TrA, VL, VA, TeL, TeA = losses["train"]/counts["train"], accuracies["train"]/counts["train"], losses["val"]/counts["val"], accuracies["val"]/counts["val"], losses["test"]/counts["test"], accuracies["test"]/counts["test"]
-    print("Model: {11} - Subject {12} - Time interval: [{9}-{10}]  [?-? Hz] - Epoch {0}: TrL={1:.4f}, "
-          "TrA={2:.4f}, VL={3:.4f}, VA={4:.4f}, TeL={5:.4f}, TeA={6:.4f}, TeA at max VA = {7:.4f} at epoch {"
-          "8:d}".format(epoch,
-                        losses["train"]/counts["train"],
-                        accuracies["train"]/counts["train"],
-                        losses["val"]/counts["val"],
-                        accuracies["val"]/counts["val"],
-                        losses["test"]/counts["test"],
-                        accuracies["test"]/counts["test"],
-                        best_accuracy, best_epoch, opt.time_low, opt.time_high, opt.model_type, opt.subject))
+        TrL, TrA, VL, VA, TeL, TeA = losses["train"]/counts["train"], accuracies["train"]/counts["train"], losses["val"]/counts["val"], accuracies["val"]/counts["val"], losses["test"]/counts["test"], accuracies["test"]/counts["test"]
+        print("Model: {11} - Subject {12} - Time interval: [{9}-{10}]  [?-? Hz] - Epoch {0}: TrL={1:.4f}, "
+              "TrA={2:.4f}, VL={3:.4f}, VA={4:.4f}, TeL={5:.4f}, TeA={6:.4f}, TeA at max VA = {7:.4f} at epoch {"
+              "8:d}".format(epoch,
+                            losses["train"]/counts["train"],
+                            accuracies["train"]/counts["train"],
+                            losses["val"]/counts["val"],
+                            accuracies["val"]/counts["val"],
+                            losses["test"]/counts["test"],
+                            accuracies["test"]/counts["test"],
+                            best_accuracy, best_epoch, opt.time_low, opt.time_high, opt.model_type, opt.subject))
 
-    losses_per_epoch['train'].append(TrL)
-    losses_per_epoch['val'].append(VL)
-    losses_per_epoch['test'].append(TeL)
-    accuracies_per_epoch['train'].append(TrA)
-    accuracies_per_epoch['val'].append(VA)
-    accuracies_per_epoch['test'].append(TeA)
+        losses_per_epoch['train'].append(TrL)
+        losses_per_epoch['val'].append(VL)
+        losses_per_epoch['test'].append(TeL)
+        accuracies_per_epoch['train'].append(TrA)
+        accuracies_per_epoch['val'].append(VA)
+        accuracies_per_epoch['test'].append(TeA)
 
-    if epoch % opt.saveCheck == 0:
-        torch.save(model, '%s__subject%d_epoch_%d.pth' % (opt.model_type, opt.subject, epoch))
+        if epoch % opt.saveCheck == 0:
+            torch.save(model, '%s__subject%d_epoch_%d.pth' % (opt.model_type, opt.subject, epoch))
+
+if __name__ == "__main__":
+    # You can change the number of GPUs per trial here:
+    main(num_samples=10, max_num_epochs=200, gpus_per_trial=1)
