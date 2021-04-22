@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import math
-import torch.nn.functional as F
+# import torch.nn.functional as F
+
 
 class ConvLayer2D(nn.Sequential):
     def __init__(self, in_channels, out_channels, kernel, stride, padding, dilation):
@@ -15,6 +16,7 @@ class ConvLayer2D(nn.Sequential):
 
     def forward(self, x):
         return super().forward(x)
+
 
 class TemporalBlock(nn.Module):
     def __init__(self, in_channels, out_channels, n_layers, kernel_size, stride, dilation_list, in_size):
@@ -46,27 +48,28 @@ class TemporalBlock(nn.Module):
         out = torch.cat(features, 1)
         return out
 
+
 class SpatialBlock(nn.Module):
     def __init__(self, in_channels, out_channels, num_spatial_layers, stride, input_height):
         super().__init__()
-       
+
         kernel_list = []
         for i in range(num_spatial_layers):
             kernel_list.append(((input_height // (i + 1)), 1))
 
         padding = []
         for kernel in kernel_list:
-            temp_pad = math.floor((kernel[0] - 1) / 2)# - 1 * (kernel[1] // 2 - 1)
+            temp_pad = math.floor((kernel[0] - 1) / 2)  # - 1 * (kernel[1] // 2 - 1)
             padding.append((temp_pad, 0))
 
-        feature_height = input_height // stride[0]
+        # feature_height = input_height // stride[0]
 
         self.layers = nn.ModuleList([
             ConvLayer2D(
                 in_channels, out_channels, kernel_list[i], stride, padding[i], 1
             ) for i in range(num_spatial_layers)
         ])
-    
+
     def forward(self, x):
         features = []
 
@@ -78,9 +81,11 @@ class SpatialBlock(nn.Module):
 
         return out
 
+
 def conv3x3(in_channels, out_channels, stride=1):
-    return nn.Conv2d(in_channels, out_channels, kernel_size=3, 
+    return nn.Conv2d(in_channels, out_channels, kernel_size=3,
                      stride=stride, padding=1, bias=False)
+
 
 # Residual block
 class ResidualBlock(nn.Module):
@@ -95,8 +100,8 @@ class ResidualBlock(nn.Module):
         self.downsample = downsample
 
     def swish(x):
-        return x * F.sigmoid(x)
-        
+        return x * torch.sigmoid(x)
+
     def forward(self, x):
         residual = x
         out = self.conv1(x)
