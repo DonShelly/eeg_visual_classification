@@ -9,10 +9,6 @@ import torch.nn as nn
 from ray import tune
 from ray.tune.schedulers import ASHAScheduler
 from models.lstm import Model
-# import argparse
-# from ray.tune import CLIReporter
-# from functools import partial
-# from ray.util.accelerators import GTX
 
 
 torch.utils.backcompat.broadcast_warning.enabled = True
@@ -32,9 +28,7 @@ class EEGDataset:
     def __init__(self, eeg_signals_path):
         # Load EEG signals
         loaded = torch.load(eeg_signals_path)
-        # if opt.subject != 0:
-        #     self.data = [loaded['dataset'][i] for i in range(len(loaded['dataset'])) if loaded['dataset'][i]['subject'] == opt.subject]
-        # else:
+
         self.data = loaded['dataset']
         self.labels = loaded["labels"]
         self.images = loaded["images"]
@@ -83,7 +77,7 @@ class Splitter:
         return eeg, label
 
 
-def load_data(data_dir="../../datasets/original_data/eeg_signals_128_sequential_band_all_with_mean_std.pth"):
+def load_data(config, data_dir="../../datasets/original_data/eeg_signals_128_sequential_band_all_with_mean_std.pth"):
     # Load dataset
     dataset = EEGDataset(data_dir)
     # Create loaders
@@ -92,14 +86,13 @@ def load_data(data_dir="../../datasets/original_data/eeg_signals_128_sequential_
     return loaders
 
 
-# @ray.remote(num_gpus=2, accelerator_type=GTX)
 def train_classifier(config, checkpoint_dir=None, data_dir=None):
     # print("model options: " + model_options)
 
     # Load model
     model = Model(config["input_size"], config["lstm_size"], config["lstm_layers"], config["output_size"])
     # load data
-    loaders = load_data(data_dir)
+    loaders = load_data(config, data_dir)
 
     # Setup CUDA
     device = "cpu"
@@ -111,9 +104,6 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
 
     # criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=config["lr"], momentum=0.9)
-    # if not opt.no_cuda:
-    #     model.cuda()
-    #     print("Copied to CUDA")
 
 # ####KKKEEEEEEEEEEEPPPPP~~~~~'########'########
     # if opt.pretrained_net != '':
@@ -126,7 +116,7 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
     # accuracies_per_epoch = {"train": [], "val": [], "test": []}
 
     # best_accuracy = 0
-    best_accuracy_val = 0
+    # best_accuracy_val = 0
     # best_epoch = 0
     # Start training
 
@@ -137,7 +127,8 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
         counts = {"train": 0, "val": 0, "test": 0}
 
         # Process each split
-        for split in ("train", "val", "test"):
+        # for split in ("train", "val", "test"):
+        for split in ("train", "val"):
             # Set network mode
             if split == "train":
                 model.train()
@@ -169,10 +160,10 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
                     optimizer.step()
 
         # Print info at the end of the epoch
-        if accuracies["val"] / counts["val"] >= best_accuracy_val:
-            best_accuracy_val = accuracies["val"] / counts["val"]
-            # best_accuracy = accuracies["test"] / counts["test"]
-            # best_epoch = epoch
+        # if accuracies["val"] / counts["val"] >= best_accuracy_val:
+        #     best_accuracy_val = accuracies["val"] / counts["val"]
+        #     best_accuracy = accuracies["test"] / counts["test"]
+        #     best_epoch = epoch
 
         # TrL, TrA, VL, VA, TeL, TeA = losses["train"] / counts["train"], accuracies["train"] / counts["train"], losses["val"] / counts["val"], accuracies["val"] / counts["val"], losses["test"] / counts["test"], accuracies["test"] / counts["test"]
         # print("Model: {11} - Subject {12} - Time interval: [{9}-{10}]  [?-? Hz] - Epoch {0}: TrL={1:.4f}, "
@@ -184,7 +175,7 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
         #                     accuracies["val"] / counts["val"],
         #                     losses["test"] / counts["test"],
         #                     accuracies["test"] / counts["test"],
-        #                     best_accuracy, best_epoch, opt.time_low, opt.time_high, opt.model_type, opt.subject))
+        #                     best_accuracy, best_epoch, time_low, time_high, "lstm", 0))
 
         # losses_per_epoch['train'].append(TrL)
         # losses_per_epoch['val'].append(VL)
@@ -211,8 +202,6 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
 def test_accuracy(model, device="cpu"):
 
     loaders = load_data()
-
-    # rainset = loaders["train"]
     testloader = loaders["test"]
 
     correct = 0
@@ -231,22 +220,22 @@ def test_accuracy(model, device="cpu"):
 
 config = {
     "input_size": 128,
-    "lstm_size": 128,
+    "lstm_size": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
     "lstm_layers": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
     "output_size": 128,
-    "lr": tune.loguniform(1e-4, 1e-1),
-    "batch_size": tune.choice([2, 4, 8, 16])
+    "lr": tune.loguniform(1e-4, 1e-1)
+    # "batch_size": tune.choice([2, 4, 8, 16])
 }
 
 print("config: " + str(config))
 
 
-def main(num_samples=10, max_num_epochs=10, gpus_per_trial=2):
+def main(num_samples=20, max_time=100, gpus_per_trial=2):
 
     data_dir = os.path.abspath("../../datasets/original_data/eeg_signals_128_sequential_band_all_with_mean_std.pth")
 
     scheduler = ASHAScheduler(
-        max_t=max_num_epochs,
+        max_t=max_time,
         grace_period=1,
         reduction_factor=2)
 
@@ -287,4 +276,4 @@ def main(num_samples=10, max_num_epochs=10, gpus_per_trial=2):
 
 if __name__ == "__main__":
     # You can change the number of GPUs per trial here:
-    main(num_samples=10, max_num_epochs=200, gpus_per_trial=2)
+    main(num_samples=50, max_time=100, gpus_per_trial=2)

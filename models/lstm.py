@@ -42,7 +42,6 @@ class Model(nn.Module):
         x = self.lstm(x, lstm_init)[0][:, -1, :]
 
         # Forward output
-        # x = F.relu(self.output(x))
         x = layers.ResidualBlock.swish(self.output(x))
         x = self.classifier((x))
         return x
