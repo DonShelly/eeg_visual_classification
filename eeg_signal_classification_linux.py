@@ -77,7 +77,7 @@ class Splitter:
         return eeg, label
 
 
-def load_data(config, data_dir="../../datasets/original_data/eeg_signals_128_sequential_band_all_with_mean_std.pth"):
+def load_data(data_dir="../../datasets/original_data/eeg_signals_128_sequential_band_all_with_mean_std.pth"):
     # Load dataset
     dataset = EEGDataset(data_dir)
     # Create loaders
@@ -91,8 +91,6 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
 
     # Load model
     model = Model(config["input_size"], config["lstm_size"], config["lstm_layers"], config["output_size"])
-    # load data
-    loaders = load_data(config, data_dir)
 
     # Setup CUDA
     device = "cpu"
@@ -103,7 +101,17 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
     model.to(device)
 
     # criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=config["lr"], momentum=0.9)
+    # optimizer = optim.SGD(model.parameters(), lr=config["lr"], momentum=0.9)
+    optimizer = optim.Adam(model.parameters(), lr=config["lr"])
+
+    if checkpoint_dir:
+        checkpoint = os.path.join(checkpoint_dir, "checkpoint")
+        model_state, optimizer_state = torch.load(checkpoint)
+        model.load_state_dict(model_state)
+        optimizer.load_state_dict(optimizer_state)
+
+    # load data
+    loaders = load_data(data_dir=data_dir)
 
 # ####KKKEEEEEEEEEEEPPPPP~~~~~'########'########
     # if opt.pretrained_net != '':
@@ -118,9 +126,9 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
     # best_accuracy = 0
     # best_accuracy_val = 0
     # best_epoch = 0
-    # Start training
 
-    for epoch in range(200):
+    # Start training
+    for epoch in range(50):
         # Initialize loss/accuracy variables
         losses = {"train": 0, "val": 0, "test": 0}
         accuracies = {"train": 0, "val": 0, "test": 0}
@@ -159,7 +167,7 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
                     loss.backward()
                     optimizer.step()
 
-        # Print info at the end of the epoch
+        #Print info at the end of the epoch
         # if accuracies["val"] / counts["val"] >= best_accuracy_val:
         #     best_accuracy_val = accuracies["val"] / counts["val"]
         #     best_accuracy = accuracies["test"] / counts["test"]
@@ -199,6 +207,7 @@ def train_classifier(config, checkpoint_dir=None, data_dir=None):
     print("Finished Training")
 
 
+# default device is always CPU for compatability
 def test_accuracy(model, device="cpu"):
 
     loaders = load_data()
@@ -218,21 +227,22 @@ def test_accuracy(model, device="cpu"):
     return correct / total
 
 
-config = {
-    "input_size": 128,
-    "lstm_size": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
-    "lstm_layers": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
-    "output_size": 128,
-    "lr": tune.loguniform(1e-4, 1e-1)
-    # "batch_size": tune.choice([2, 4, 8, 16])
-}
 
-print("config: " + str(config))
+# print("config: " + str(config))
 
 
-def main(num_samples=20, max_time=100, gpus_per_trial=2):
+def main(num_samples=10, max_time=10, gpus_per_trial=1, cpus_per_trial=2, num_of_epochs=10):
 
     data_dir = os.path.abspath("../../datasets/original_data/eeg_signals_128_sequential_band_all_with_mean_std.pth")
+
+    config = {
+        "input_size": 128,
+        "lstm_size": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
+        "lstm_layers": tune.sample_from(lambda _: 2**np.random.randint(2, 9)),
+        "output_size": 128,
+        "lr": tune.loguniform(1e-4, 1e-1)
+        # "batch_size": tune.choice([2, 4, 8, 16])
+    }
 
     scheduler = ASHAScheduler(
         max_t=max_time,
@@ -241,7 +251,7 @@ def main(num_samples=20, max_time=100, gpus_per_trial=2):
 
     result = tune.run(
         tune.with_parameters(train_classifier, data_dir=data_dir),
-        resources_per_trial={"cpu": 12, "gpu": gpus_per_trial},
+        resources_per_trial={"cpu": cpus_per_trial, "gpu": gpus_per_trial},
         config=config,
         metric="loss",
         mode="min",
@@ -276,4 +286,4 @@ def main(num_samples=20, max_time=100, gpus_per_trial=2):
 
 if __name__ == "__main__":
     # You can change the number of GPUs per trial here:
-    main(num_samples=50, max_time=100, gpus_per_trial=2)
+    main(num_samples=100, max_time=200, gpus_per_trial=1, cpus_per_trial=20, num_of_epochs=50)
